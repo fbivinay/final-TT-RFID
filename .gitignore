@@ -1,8 +1,0 @@
-.next
-node_modules
-.vercel
-.env
-.env.local
-dist
-out
-*.log
