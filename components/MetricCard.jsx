@@ -1,4 +1,4 @@
-export default function MetricCard({ title, value, detail, tone = "blue", icon: Icon }) {
+export default function MetricCard({ title, value, detail, tone = "blue", icon: Icon, onClick }) {
   const tones = {
     blue:   "border-l-brand-600 text-brand-700",
     green:  "border-l-green-600 text-green-700",
@@ -17,11 +17,16 @@ export default function MetricCard({ title, value, detail, tone = "blue", icon: 
     cyan:   "bg-sky-50 text-sky-600",
   };
 
-  const t = tones[tone] || tones.blue;
+  const t  = tones[tone] || tones.blue;
   const ib = iconBg[tone] || iconBg.blue;
 
+  const Tag = onClick ? "button" : "div";
+
   return (
-    <div className={`panel rounded-lg border-l-4 p-5 ${t}`}>
+    <Tag
+      onClick={onClick}
+      className={`panel w-full rounded-lg border-l-4 p-5 text-left ${t} ${onClick ? "cursor-pointer transition hover:shadow-card-hover hover:scale-[1.02]" : ""}`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-stone-500">{title}</p>
@@ -34,6 +39,7 @@ export default function MetricCard({ title, value, detail, tone = "blue", icon: 
           </span>
         ) : null}
       </div>
-    </div>
+      {onClick && <p className="mt-2 text-xs text-stone-400">Click to view items →</p>}
+    </Tag>
   );
 }
