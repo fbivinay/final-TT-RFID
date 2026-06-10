@@ -98,20 +98,6 @@ export default function LoginPage() {
           </form>
         </div>
 
-        {/* Credentials hint */}
-        <div className="mt-4 rounded-lg border border-stone-200 bg-white p-4">
-          <p className="mb-2 text-xs font-semibold text-stone-500 uppercase tracking-wider">
-            Demo Credentials
-          </p>
-          <div className="space-y-1 text-xs">
-            <div className="flex justify-between gap-4">
-              <span className="text-stone-500">Admin:</span>
-              <span className="font-mono text-brand-600">grofunds6924@gmail.com</span>
-            </div>
-            <p className="text-right text-stone-400">(your Supabase password)</p>
-          </div>
-        </div>
-
         <p className="mt-6 text-center text-xs text-stone-400">
           Trend Trackers v1.0 · Texs Mart Retail Management System
         </p>

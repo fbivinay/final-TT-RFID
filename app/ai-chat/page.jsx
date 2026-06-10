@@ -91,7 +91,7 @@ export default function AiChatPage() {
                 className={`max-w-[820px] rounded-lg border px-4 py-3 text-sm leading-7 ${
                   message.role === "user"
                     ? "border-brand-200"
-                    : "border-stone-200 bg-stone-50 text-slate-100"
+                    : "border-stone-200 bg-stone-50 text-stone-800"
                 }`}
                 style={{ whiteSpace: "pre-line" }}
               >
