@@ -52,7 +52,7 @@ export default function Shell({ children }) {
 
   const navItems = isAdmin ? [...BASE_NAV, ...ADMIN_NAV] : BASE_NAV;
 
-  if (loading) {
+  if (loading || !user) {
     return (
       <div className="min-h-screen bg-stone-50 flex items-center justify-center">
         <div className="flex items-center gap-3 text-stone-400">
