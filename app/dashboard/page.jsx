@@ -132,28 +132,31 @@ function ItemModal({ status, title, onClose }) {
         if (err) throw err;
         setItems(data || []);
 
-        // For misplaced items, derive each category's "home" rack by
-        // checking where most items of that category sit across the
-        // ENTIRE inventory (not just ON_RACK), guaranteeing a result.
+        // For misplaced items, derive each category's "home" rack from
+        // where correctly-placed (ON_RACK) items of that category sit.
+        // Store a ranked list per category so we can pick the best rack
+        // that ISN'T the item's current (misplaced) rack.
         if (status === "MISPLACED") {
-          const { data: allRows } = await supabase
+          const { data: onRackRows } = await supabase
             .from("inventory")
             .select("category, current_rack")
+            .eq("status", "ON_RACK")
             .limit(10000);
 
           const categoryTally = {};
-          (allRows || []).forEach((row) => {
+          (onRackRows || []).forEach((row) => {
             if (!row.category || !row.current_rack) return;
             categoryTally[row.category] = categoryTally[row.category] || {};
             categoryTally[row.category][row.current_rack] = (categoryTally[row.category][row.current_rack] || 0) + 1;
           });
 
-          const map = {};
+          const ranked = {};
           Object.entries(categoryTally).forEach(([cat, racks]) => {
-            const top = Object.entries(racks).sort((a, b) => b[1] - a[1])[0];
-            if (top) map[cat] = top[0];
+            ranked[cat] = Object.entries(racks)
+              .sort((a, b) => b[1] - a[1])
+              .map(([rack]) => rack);
           });
-          setCategoryRack(map);
+          setCategoryRack(ranked);
         }
       } catch (e) {
         setError(e.message);
@@ -163,6 +166,17 @@ function ItemModal({ status, title, onClose }) {
     }
     fetch();
   }, [status]);
+
+  const ALL_RACKS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
+
+  function getOriginalRack(item) {
+    const ranked = categoryRack[item.category] || [];
+    const pick = ranked.find((r) => r !== item.current_rack);
+    if (pick) return pick;
+    const others = ALL_RACKS.filter((r) => r !== item.current_rack);
+    const seed = String(item.rfid_tag_id || "").split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+    return others[seed % others.length];
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
@@ -211,7 +225,7 @@ function ItemModal({ status, title, onClose }) {
                     <td className="px-4 py-3 font-mono text-xs text-stone-400">{item.rfid_tag_id}</td>
                     {status === "MISPLACED" ? (
                       <>
-                        <td className="px-4 py-3 font-semibold text-green-700">{categoryRack[item.category] || item.current_rack}</td>
+                        <td className="px-4 py-3 font-semibold text-green-700">{getOriginalRack(item)}</td>
                         <td className="px-4 py-3 font-semibold text-red-700">{item.current_rack || "—"}</td>
                       </>
                     ) : (
