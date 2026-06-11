@@ -110,9 +110,10 @@ export default function DashboardPage() {
 // ── Item Modal ─────────────────────────────────────────────────────────────────
 
 function ItemModal({ status, title, onClose }) {
-  const [items,   setItems]   = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(null);
+  const [items,       setItems]       = useState([]);
+  const [sectionRack, setSectionRack] = useState({});
+  const [loading,     setLoading]     = useState(true);
+  const [error,       setError]       = useState(null);
 
   useEffect(() => {
     async function fetch() {
@@ -130,6 +131,31 @@ function ItemModal({ status, title, onClose }) {
         const { data, error: err } = await query;
         if (err) throw err;
         setItems(data || []);
+
+        // For misplaced items, build a section -> most-common rack map
+        // from correctly-placed (ON_RACK) items so we can show the
+        // item's "home" rack letter instead of its section name.
+        if (status === "MISPLACED") {
+          const { data: onRackData } = await supabase
+            .from("inventory")
+            .select("section, current_rack")
+            .eq("status", "ON_RACK")
+            .limit(5000);
+
+          const tally = {};
+          (onRackData || []).forEach((row) => {
+            if (!row.section || !row.current_rack) return;
+            tally[row.section] = tally[row.section] || {};
+            tally[row.section][row.current_rack] = (tally[row.section][row.current_rack] || 0) + 1;
+          });
+
+          const map = {};
+          Object.entries(tally).forEach(([section, racks]) => {
+            const top = Object.entries(racks).sort((a, b) => b[1] - a[1])[0];
+            if (top) map[section] = top[0];
+          });
+          setSectionRack(map);
+        }
       } catch (e) {
         setError(e.message);
       } finally {
@@ -186,7 +212,7 @@ function ItemModal({ status, title, onClose }) {
                     <td className="px-4 py-3 font-mono text-xs text-stone-400">{item.rfid_tag_id}</td>
                     {status === "MISPLACED" ? (
                       <>
-                        <td className="px-4 py-3 font-semibold text-green-700">{item.section || "—"}</td>
+                        <td className="px-4 py-3 font-semibold text-green-700">{sectionRack[item.section] || item.section || "—"}</td>
                         <td className="px-4 py-3 font-semibold text-red-700">{item.current_rack || "—"}</td>
                       </>
                     ) : (
