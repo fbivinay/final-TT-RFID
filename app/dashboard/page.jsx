@@ -110,8 +110,7 @@ export default function DashboardPage() {
 // ── Item Modal ─────────────────────────────────────────────────────────────────
 
 function ItemModal({ status, title, onClose }) {
-  const [items,       setItems]       = useState([]);
-  const [sectionRack, setSectionRack] = useState({});
+  const [items,        setItems]        = useState([]);
   const [categoryRack, setCategoryRack] = useState({});
   const [loading,     setLoading]     = useState(true);
   const [error,       setError]       = useState(null);
@@ -133,41 +132,28 @@ function ItemModal({ status, title, onClose }) {
         if (err) throw err;
         setItems(data || []);
 
-        // For misplaced items, build section -> rack and category -> rack
-        // maps from ON_RACK items so we can show a rack letter (A, B, C...)
-        // instead of a section/category name.
+        // For misplaced items, derive each category's "home" rack by
+        // checking where most items of that category sit across the
+        // ENTIRE inventory (not just ON_RACK), guaranteeing a result.
         if (status === "MISPLACED") {
-          const { data: onRackData } = await supabase
+          const { data: allRows } = await supabase
             .from("inventory")
-            .select("section, category, current_rack")
-            .eq("status", "ON_RACK")
-            .limit(8000);
+            .select("category, current_rack")
+            .limit(10000);
 
-          const sectionTally  = {};
           const categoryTally = {};
-          (onRackData || []).forEach((row) => {
-            if (!row.current_rack) return;
-            if (row.section) {
-              sectionTally[row.section] = sectionTally[row.section] || {};
-              sectionTally[row.section][row.current_rack] = (sectionTally[row.section][row.current_rack] || 0) + 1;
-            }
-            if (row.category) {
-              categoryTally[row.category] = categoryTally[row.category] || {};
-              categoryTally[row.category][row.current_rack] = (categoryTally[row.category][row.current_rack] || 0) + 1;
-            }
+          (allRows || []).forEach((row) => {
+            if (!row.category || !row.current_rack) return;
+            categoryTally[row.category] = categoryTally[row.category] || {};
+            categoryTally[row.category][row.current_rack] = (categoryTally[row.category][row.current_rack] || 0) + 1;
           });
 
-          const topRack = (tally) => {
-            const map = {};
-            Object.entries(tally).forEach(([key, racks]) => {
-              const top = Object.entries(racks).sort((a, b) => b[1] - a[1])[0];
-              if (top) map[key] = top[0];
-            });
-            return map;
-          };
-
-          setSectionRack(topRack(sectionTally));
-          setCategoryRack(topRack(categoryTally));
+          const map = {};
+          Object.entries(categoryTally).forEach(([cat, racks]) => {
+            const top = Object.entries(racks).sort((a, b) => b[1] - a[1])[0];
+            if (top) map[cat] = top[0];
+          });
+          setCategoryRack(map);
         }
       } catch (e) {
         setError(e.message);
@@ -225,7 +211,7 @@ function ItemModal({ status, title, onClose }) {
                     <td className="px-4 py-3 font-mono text-xs text-stone-400">{item.rfid_tag_id}</td>
                     {status === "MISPLACED" ? (
                       <>
-                        <td className="px-4 py-3 font-semibold text-green-700">{sectionRack[item.section] || categoryRack[item.category] || "—"}</td>
+                        <td className="px-4 py-3 font-semibold text-green-700">{categoryRack[item.category] || item.current_rack}</td>
                         <td className="px-4 py-3 font-semibold text-red-700">{item.current_rack || "—"}</td>
                       </>
                     ) : (
