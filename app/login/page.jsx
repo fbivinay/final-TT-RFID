@@ -1,16 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, LogIn, Radar } from "lucide-react";
 import { signIn } from "@/lib/auth";
+import { useAuth } from "@/lib/authContext";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
   const [error,    setError]    = useState("");
   const [loading,  setLoading]  = useState(false);
+
+  // Redirect automatically once auth context confirms a logged-in user
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.replace("/dashboard");
+    }
+  }, [authLoading, user, router]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -18,11 +27,10 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await signIn(email, password);
-      router.push("/dashboard");
-      router.refresh();
+      // Don't push here — the useEffect above will redirect once
+      // the auth context picks up the new session via onAuthStateChange.
     } catch (err) {
       setError(err.message || "Invalid email or password. Please try again.");
-    } finally {
       setLoading(false);
     }
   }
