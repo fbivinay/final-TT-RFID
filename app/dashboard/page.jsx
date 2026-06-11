@@ -121,7 +121,7 @@ function ItemModal({ status, title, onClose }) {
       try {
         let query = supabase
           .from("inventory")
-          .select("rfid_tag_id, product_name, category, current_rack, status")
+          .select("rfid_tag_id, product_name, category, current_rack, section, status")
           .order("current_rack", { ascending: true })
           .limit(1000);
 
@@ -166,7 +166,14 @@ function ItemModal({ status, title, onClose }) {
                   <th className="px-4 py-3 text-left">Product</th>
                   <th className="px-4 py-3 text-left">Category</th>
                   <th className="px-4 py-3 text-left">RFID</th>
-                  <th className="px-4 py-3 text-left">Rack</th>
+                  {status === "MISPLACED" ? (
+                    <>
+                      <th className="px-4 py-3 text-left">Original Rack</th>
+                      <th className="px-4 py-3 text-left">Misplaced Rack</th>
+                    </>
+                  ) : (
+                    <th className="px-4 py-3 text-left">Rack</th>
+                  )}
                   {status === "ALL" && <th className="px-4 py-3 text-left">Status</th>}
                 </tr>
               </thead>
@@ -177,7 +184,14 @@ function ItemModal({ status, title, onClose }) {
                     <td className="px-4 py-3 font-medium text-stone-900">{item.product_name || "—"}</td>
                     <td className="px-4 py-3 text-stone-500">{item.category || "—"}</td>
                     <td className="px-4 py-3 font-mono text-xs text-stone-400">{item.rfid_tag_id}</td>
-                    <td className="px-4 py-3 text-stone-600">{item.current_rack || "—"}</td>
+                    {status === "MISPLACED" ? (
+                      <>
+                        <td className="px-4 py-3 font-semibold text-green-700">{item.section || "—"}</td>
+                        <td className="px-4 py-3 font-semibold text-red-700">{item.current_rack || "—"}</td>
+                      </>
+                    ) : (
+                      <td className="px-4 py-3 text-stone-600">{item.current_rack || "—"}</td>
+                    )}
                     {status === "ALL" && (
                       <td className="px-4 py-3">
                         <span className={`rounded px-2 py-0.5 text-xs font-medium ${
